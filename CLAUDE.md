@@ -41,5 +41,18 @@ reimplemented from public write-ups, no third-party code is included.
   action fires on release only if the wheel did not move.
 - Logic: Mackie Control where it exists (transport, jog, Cycle+Rewind/FF for locators, Select 1-8
   for CAM keys, Record for LIVE O/WR), keystrokes otherwise. Logic discovers the surface by sysex
-  query; we answer as a Mackie Control with serial SEB0001. Shuttle emits jog ticks at a rate.
+  query; we answer as a Mackie Control with serial SEB0001. **Logic never sends the 0x02 host
+  connection reply** - after our 0x01 answer it goes straight to configuring the surface (0x21
+  global meter mode, 0x20 channel meters, 0x0b backlight timeout), and that is how we know it is
+  installed. Verified in Control Surfaces > Setup on 2026-10-09. SCRL taps Rewind/Fast Fwd (one
+  bar per step); shuttle emits jog ticks at a rate.
+- Keys that flash the screen are unbound in the target app (macOS alert flash). FCP's Up/Down
+  arrows are browser selection moves, not edit navigation; `;` and `'` are previous/next edit.
+  Logic has no default for Option-comma/period. Check the real default before assuming.
+- FCP's authoritative shortcut list is inside the bundle:
+  `Contents/Resources/en.lproj/Default.commandset` (plist; `plutil -convert json`). Apple's web
+  page truncates. Half speed is PlayRateHalf = Option-L / PlayRateMinusHalf = Option-J.
+- Signing: `tools/make-signing-cert.sh` makes a local "Speed Editor Bridge Dev" identity so the
+  Accessibility grant survives rebuilds (ad-hoc signatures lose it every build). Homebrew
+  OpenSSL 4's default PKCS12 is unreadable by `security import`; the script forces SHA-1/3DES.
 - No red anywhere in the UI (brand rule). Accent is brand cyan `#02CAF2`.

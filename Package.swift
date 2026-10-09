@@ -13,6 +13,6 @@ let package = Package(
         .target(name: "SpeedEditorKit", linkerSettings: [.linkedFramework("IOKit")]),
         .executableTarget(name: "seprobe", dependencies: ["SpeedEditorKit"]),
         .executableTarget(name: "SpeedEditorBridge", dependencies: ["SpeedEditorKit"],
-                          linkerSettings: [.linkedFramework("CoreMIDI"), .linkedFramework("AppKit"), .linkedFramework("Carbon")]),
+                          linkerSettings: [.linkedFramework("CoreMIDI"), .linkedFramework("AppKit"), .linkedFramework("Carbon"), .linkedFramework("ServiceManagement")]),
     ]
 )
