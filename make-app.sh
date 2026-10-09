@@ -28,5 +28,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
-codesign --force --sign - "$APP"
+IDENTITY="Speed Editor Bridge Dev"
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
+  codesign --force --sign "$IDENTITY" "$APP"
+else
+  echo "No '$IDENTITY' certificate; signing ad hoc (Accessibility must be re-granted after each build). Run tools/make-signing-cert.sh once to fix."
+  codesign --force --sign - "$APP"
+fi
 echo "Built $APP"
