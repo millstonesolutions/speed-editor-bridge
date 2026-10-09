@@ -139,7 +139,7 @@ enum DefaultProfiles {
             "stopPlay": .mackiePlayStop,
         ],
         jog: .mackieJog,
-        scroll: .keys(WheelKeys(negative: k("opt+,"), positive: k("opt+."))),
+        scroll: .mackieButtons(negative: .rewind, positive: .fastForward),
         shuttle: .mackieRate,
         framesPerRevolution: 96,
         scrollTicksPerStep: 24,

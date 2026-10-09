@@ -183,14 +183,28 @@ struct WheelKeysEditor: View {
 
     var body: some View {
         Picker("Output", selection: Binding<String>(
-            get: { if case .mackieJog = output { return "mackie" } else { return "keys" } },
+            get: {
+                switch output {
+                case .mackieJog: return "mackie"
+                case .mackieButtons: return "buttons"
+                case .keys: return "keys"
+                }
+            },
             set: { (v: String) in
-                if v == "mackie" { output = .mackieJog }
-                else if case .mackieJog = output { output = .keys(WheelKeys(negative: KeyCombo("left"), positive: KeyCombo("right"))) }
+                switch v {
+                case "mackie": output = .mackieJog
+                case "buttons": if case .mackieButtons = output {} else { output = .mackieButtons(negative: .rewind, positive: .fastForward) }
+                default: if case .keys = output {} else { output = .keys(WheelKeys(negative: KeyCombo("left"), positive: KeyCombo("right"))) }
+                }
             }
         )) {
             Text("Keystrokes").tag("keys")
             Text("Mackie jog wheel").tag("mackie")
+            Text("Mackie buttons").tag("buttons")
+        }
+        if case .mackieButtons(let n, let p) = output {
+            Picker("Back", selection: Binding(get: { n }, set: { output = .mackieButtons(negative: $0, positive: p) })) { ForEach(MackieButton.allCases) { Text($0.label).tag($0) } }
+            Picker("Forward", selection: Binding(get: { p }, set: { output = .mackieButtons(negative: n, positive: $0) })) { ForEach(MackieButton.allCases) { Text($0.label).tag($0) } }
         }
         if case .keys(let wk) = output {
             comboField("Back", wk.negative) { c in if let c { var w = wk; w.negative = c; output = .keys(w) } }

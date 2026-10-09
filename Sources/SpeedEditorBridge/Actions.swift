@@ -231,10 +231,13 @@ enum ShuttleStyle: String, Codable, CaseIterable {
 enum WheelOutput: Codable, Hashable {
     case keys(WheelKeys)
     case mackieJog
+    /// Tap a Mackie button per step (e.g. Rewind / Fast Fwd move by a bar).
+    case mackieButtons(negative: MackieButton, positive: MackieButton)
     var summary: String {
         switch self {
         case .keys(let k): return k.summary
         case .mackieJog: return "MCU jog wheel"
+        case .mackieButtons(let n, let p): return "MCU \(n.label) / \(p.label)"
         }
     }
 }

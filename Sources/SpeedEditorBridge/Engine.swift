@@ -62,7 +62,8 @@ final class Engine: ObservableObject {
             Task { @MainActor in self?.frontmostChanged(bundleID) }
         }
         mackie.onLog = { [weak self] msg in Task { @MainActor in self?.append(msg) } }
-        mackie.onRecordState = { [weak self] _ in Task { @MainActor in self?.updateLEDs() } }
+        mackie.onRecordState = { [weak self] on in Task { @MainActor in self?.updateLEDs(); self?.append("Logic record \(on ? "on" : "off")") } }
+        mackie.onPlayState = { [weak self] on in Task { @MainActor in self?.append("Logic transport \(on ? "playing" : "stopped")") } }
 
         monitor.start()
         trustTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -285,12 +286,14 @@ final class Engine: ObservableObject {
             switch profile.jog {
             case .keys(let wk): emit(wk, value: Double(value), unitsPerStep: unitsPerFrame(profile), remainder: &jogRemainder)
             case .mackieJog: emitMackie(value: Double(value), unitsPerStep: unitsPerFrame(profile), remainder: &jogRemainder)
+            case .mackieButtons(let n, let p): emitMackieButtons(n, p, value: Double(value), unitsPerStep: unitsPerFrame(profile), remainder: &jogRemainder)
             }
         case .scroll:
             let units = Double(profile.scrollTicksPerStep) * Self.unitsPerTick
             switch profile.scroll {
             case .keys(let wk): emit(wk, value: Double(value), unitsPerStep: units, remainder: &scrollRemainder)
             case .mackieJog: emitMackie(value: Double(value), unitsPerStep: units, remainder: &scrollRemainder)
+            case .mackieButtons(let n, let p): emitMackieButtons(n, p, value: Double(value), unitsPerStep: units, remainder: &scrollRemainder)
             }
         case .shuttle:
             shuttle(position: value, style: profile.shuttle)
@@ -319,6 +322,11 @@ final class Engine: ObservableObject {
             while count >= 10 { keys.press(fast); count -= 10 }
         }
         for _ in 0..<count { keys.press(single) }
+    }
+
+    private func emitMackieButtons(_ negative: MackieButton, _ positive: MackieButton, value: Double, unitsPerStep: Double, remainder: inout Double) {
+        let n = steps(from: value, unitsPerStep: unitsPerStep, remainder: &remainder)
+        for _ in 0..<min(abs(n), 8) { mackie.press(n > 0 ? positive : negative) }
     }
 
     private func emitMackie(value: Double, unitsPerStep: Double, remainder: inout Double) {

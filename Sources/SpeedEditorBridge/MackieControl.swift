@@ -100,6 +100,7 @@ final class MackieControl {
             }
             if b & 0xf0 == 0x90, i + 2 < bytes.count {
                 let note = bytes[i + 1], vel = bytes[i + 2]
+                if tracedOther < 20 { tracedOther += 1; onLog?("MCU LED note \(String(format: "%02x", note)) = \(vel)") }
                 if note == MackieButton.play.rawValue {
                     isPlaying = vel != 0
                     onPlayState?(isPlaying)
@@ -118,8 +119,22 @@ final class MackieControl {
         }
     }
 
+    private var tracedOther = 0
+    private(set) var isInstalled = false
+
     private func handleSysex(_ msg: [UInt8]) {
-        guard msg.count >= 7, Array(msg.prefix(5)) == Self.header else { return }
+        let hex = msg.prefix(16).map { String(format: "%02x", $0) }.joined(separator: " ")
+        guard msg.count >= 7, Array(msg.prefix(5)) == Self.header else {
+            onLog?("MIDI sysex (not MCU): \(hex)")
+            return
+        }
+        if msg[5] != 0x00, msg[5] != 0x12 { onLog?("MCU sysex cmd \(String(format: "%02x", msg[5])): \(hex)") }
+        // Logic skips the connection reply and goes straight to configuring the surface
+        // (meter modes, backlight timeout); the first of those means it has installed us.
+        if !isInstalled, [0x0a, 0x0b, 0x0c, 0x0e, 0x12, 0x20, 0x21].contains(msg[5]) {
+            isInstalled = true
+            onLog?("Logic installed the Mackie Control surface")
+        }
         switch msg[5] {
         case 0x00:
             // Device query: answer with a host connection query carrying our serial.
