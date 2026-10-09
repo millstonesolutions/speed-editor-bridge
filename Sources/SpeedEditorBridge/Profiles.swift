@@ -62,11 +62,11 @@ enum DefaultProfiles {
             "dissolve": .keystroke(k("cmd+t")),
             "smoothCut": .none,
             "source": .keystroke(k("cmd+1")),
-            "timeline": .keystroke(k("cmd+3")),
+            "timeline": .keystroke(k("cmd+2")),
             "shuttle": .wheelMode(.shuttle),
             "jog": .wheelMode(.jog),
             "scroll": .wheelMode(.scroll),
-            "syncBin": .none,
+            "syncBin": .keystroke(k("cmd+opt+g")),
             "transition": .keystroke(k("cmd+t")),
             "videoOnly": .toggle(on: k("shift+2"), off: k("shift+1")),
             "audioOnly": .toggle(on: k("shift+3"), off: k("shift+1")),
@@ -83,14 +83,14 @@ enum DefaultProfiles {
             "stopPlay": .keystroke(k("space")),
         ],
         jog: .keys(WheelKeys(negative: k("left"), positive: k("right"), fastNegative: k("shift+left"), fastPositive: k("shift+right"))),
-        scroll: .keys(WheelKeys(negative: k("up"), positive: k("down"))),
+        scroll: .keys(WheelKeys(negative: k(";"), positive: k("'"))),
         shuttle: .jkl,
         framesPerRevolution: 60,
         scrollTicksPerStep: 24,
         holdWheel: [
-            "trimIn": WheelKeys(negative: k(","), positive: k("."), fastNegative: k("shift+,"), fastPositive: k("shift+.")),
-            "trimOut": WheelKeys(negative: k(","), positive: k("."), fastNegative: k("shift+,"), fastPositive: k("shift+.")),
-            "roll": WheelKeys(negative: k(","), positive: k("."), fastNegative: k("shift+,"), fastPositive: k("shift+.")),
+            "trimIn": WheelKeys(negative: k(","), positive: k("."), fastNegative: k("shift+,"), fastPositive: k("shift+."), prelude: k("[")),
+            "trimOut": WheelKeys(negative: k(","), positive: k("."), fastNegative: k("shift+,"), fastPositive: k("shift+."), prelude: k("]")),
+            "roll": WheelKeys(negative: k(","), positive: k("."), fastNegative: k("shift+,"), fastPositive: k("shift+."), prelude: k("\\")),
         ],
         releaseForResolve: true
     )
@@ -168,6 +168,50 @@ enum DefaultProfiles {
     )
 }
 
+/// What the user changed relative to the built-in profile. Only this is written to disk,
+/// so improvements to the defaults still arrive after a key has been customised.
+struct ProfileOverride: Codable {
+    var id: String
+    var keys: [String: Action] = [:]
+    var jog: WheelOutput?
+    var scroll: WheelOutput?
+    var shuttle: ShuttleStyle?
+    var framesPerRevolution: Double?
+    var scrollTicksPerStep: Int?
+    var releaseForResolve: Bool?
+
+    var isEmpty: Bool {
+        keys.isEmpty && jog == nil && scroll == nil && shuttle == nil && framesPerRevolution == nil && scrollTicksPerStep == nil && releaseForResolve == nil
+    }
+
+    init(id: String) { self.id = id }
+
+    init(diffing profile: Profile, from def: Profile) {
+        id = profile.id
+        for key in SpeedEditorKey.allCases where profile.action(for: key) != def.action(for: key) {
+            keys[key.name] = profile.action(for: key)
+        }
+        if profile.jog != def.jog { jog = profile.jog }
+        if profile.scroll != def.scroll { scroll = profile.scroll }
+        if profile.shuttle != def.shuttle { shuttle = profile.shuttle }
+        if profile.framesPerRevolution != def.framesPerRevolution { framesPerRevolution = profile.framesPerRevolution }
+        if profile.scrollTicksPerStep != def.scrollTicksPerStep { scrollTicksPerStep = profile.scrollTicksPerStep }
+        if profile.releaseForResolve != def.releaseForResolve { releaseForResolve = profile.releaseForResolve }
+    }
+
+    func applied(to def: Profile) -> Profile {
+        var p = def
+        for (name, action) in keys { p.keys[name] = action }
+        if let jog { p.jog = jog }
+        if let scroll { p.scroll = scroll }
+        if let shuttle { p.shuttle = shuttle }
+        if let framesPerRevolution { p.framesPerRevolution = framesPerRevolution }
+        if let scrollTicksPerStep { p.scrollTicksPerStep = scrollTicksPerStep }
+        if let releaseForResolve { p.releaseForResolve = releaseForResolve }
+        return p
+    }
+}
+
 /// Built-in profiles plus the user's saved overrides.
 final class ProfileStore: ObservableObject {
     @Published private(set) var profiles: [Profile]
@@ -178,10 +222,11 @@ final class ProfileStore: ObservableObject {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         directory = base.appendingPathComponent("Speed Editor Bridge/profiles", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let dir = directory
         profiles = DefaultProfiles.all.map { def in
-            let url = Self.url(for: def.id, in: base.appendingPathComponent("Speed Editor Bridge/profiles", isDirectory: true))
-            if let data = try? Data(contentsOf: url), let saved = try? JSONDecoder().decode(Profile.self, from: data) {
-                return saved
+            if let data = try? Data(contentsOf: Self.url(for: def.id, in: dir)),
+               let saved = try? JSONDecoder().decode(ProfileOverride.self, from: data) {
+                return saved.applied(to: def)
             }
             return def
         }
@@ -197,10 +242,14 @@ final class ProfileStore: ObservableObject {
     }
 
     func update(_ profile: Profile) {
-        guard let idx = profiles.firstIndex(where: { $0.id == profile.id }) else { return }
+        guard let idx = profiles.firstIndex(where: { $0.id == profile.id }), let def = DefaultProfiles.profile(id: profile.id) else { return }
         profiles[idx] = profile
-        if let data = try? Profile.encoder.encode(profile) {
-            try? data.write(to: Self.url(for: profile.id, in: directory), options: .atomic)
+        let override = ProfileOverride(diffing: profile, from: def)
+        let url = Self.url(for: profile.id, in: directory)
+        if override.isEmpty {
+            try? FileManager.default.removeItem(at: url)
+        } else if let data = try? Profile.encoder.encode(override) {
+            try? data.write(to: url, options: .atomic)
         }
     }
 
@@ -217,9 +266,8 @@ final class ProfileStore: ObservableObject {
     }
 
     func resetProfile(_ profileID: String) {
-        guard let idx = profiles.firstIndex(where: { $0.id == profileID }), let def = DefaultProfiles.profile(id: profileID) else { return }
-        profiles[idx] = def
-        try? FileManager.default.removeItem(at: Self.url(for: profileID, in: directory))
+        guard let def = DefaultProfiles.profile(id: profileID) else { return }
+        update(def)
     }
 
     func isDefault(_ key: SpeedEditorKey, in profileID: String) -> Bool {
@@ -228,15 +276,16 @@ final class ProfileStore: ObservableObject {
     }
 
     func export(_ profileID: String, to url: URL) throws {
-        guard let p = profile(id: profileID) else { return }
-        try Profile.encoder.encode(p).write(to: url)
+        guard let p = profile(id: profileID), let def = DefaultProfiles.profile(id: profileID) else { return }
+        try Profile.encoder.encode(ProfileOverride(diffing: p, from: def)).write(to: url)
     }
 
     func importProfile(from url: URL) throws {
-        let p = try JSONDecoder().decode(Profile.self, from: Data(contentsOf: url))
-        guard DefaultProfiles.profile(id: p.id) != nil else {
-            throw NSError(domain: "SEB", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unknown profile id \(p.id)"])
+        let data = try Data(contentsOf: url)
+        let override = try JSONDecoder().decode(ProfileOverride.self, from: data)
+        guard let def = DefaultProfiles.profile(id: override.id) else {
+            throw NSError(domain: "SEB", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unknown profile id \(override.id)"])
         }
-        update(p)
+        update(override.applied(to: def))
     }
 }

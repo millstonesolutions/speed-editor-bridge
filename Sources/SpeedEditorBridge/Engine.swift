@@ -268,7 +268,11 @@ final class Engine: ObservableObject {
     private func wheel(_ value: Int32) {
         let profile = activeProfile
         if let holdKey = holdCandidates.last, let keysForHold = profile.holdWheel[holdKey.name] {
-            holdUsed.insert(holdKey)
+            if !holdUsed.contains(holdKey) {
+                holdUsed.insert(holdKey)
+                holdRemainder = 0
+                if let prelude = keysForHold.prelude { keys.press(prelude) }
+            }
             if wheelMode == .shuttle {
                 // Shuttle positions are absolute; treat the position as a slow nudge rate.
                 return
@@ -355,7 +359,8 @@ final class Engine: ObservableObject {
         if !canExtend {
             keys.press(k)
             if abs(target) == 1 {
-                keys.pressWhileHolding(k, tap: dirKey)
+                // Play Rate Half / Play Rate Minus Half
+                keys.press(KeyCombo(forward ? "l" : "j", option: true))
                 return
             }
             for _ in 0..<(abs(target) - 1) { keys.press(dirKey) }

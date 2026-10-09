@@ -210,6 +210,8 @@ struct WheelKeys: Codable, Hashable {
     var positive: KeyCombo
     var fastNegative: KeyCombo?
     var fastPositive: KeyCombo?
+    /// Sent once when a hold-and-turn gesture begins (e.g. select the edit point first).
+    var prelude: KeyCombo?
 
     var summary: String {
         var s = "\(negative) / \(positive)"

@@ -7,6 +7,7 @@ final class KeySender {
     private let source = CGEventSource(stateID: .hidSystemState)
 
     static var isTrusted: Bool { AXIsProcessTrusted() }
+    private static let functionKeys: Set<String> = ["left", "right", "up", "down", "home", "end", "pageup", "pagedown", "forwarddelete"]
 
     static func requestTrust() {
         let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
@@ -19,6 +20,7 @@ final class KeySender {
         if combo.shift { f.insert(.maskShift) }
         if combo.option { f.insert(.maskAlternate) }
         if combo.control { f.insert(.maskControl) }
+        if Self.functionKeys.contains(combo.key) { f.insert(.maskSecondaryFn); f.insert(.maskNumericPad) }
         return f
     }
 
