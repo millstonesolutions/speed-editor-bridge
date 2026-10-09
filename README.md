@@ -20,6 +20,22 @@ overridden per application from the mapping window.
   reset, export and import. Only overrides are stored, so updated defaults still arrive.
 - Menu-bar status item with profile lock and Launch at Login.
 
+## Installing (no Xcode needed)
+
+1. Download `Speed-Editor-Bridge-<version>.zip` from the
+   [Releases](https://github.com/millstonesolutions/speed-editor-bridge/releases) page and unzip it.
+2. Move **Speed Editor Bridge** to your Applications folder and open it.
+3. macOS will say it cannot verify the developer, because the app is not notarized with Apple.
+   Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to
+   the message about Speed Editor Bridge. This is needed once per version.
+4. Click **Allow keystrokes (Accessibility)** in the app's toolbar and turn on Speed Editor Bridge
+   in the list that System Settings shows. The button disappears when the grant is in place.
+5. Plug in the Speed Editor. The status dot turns on and the JOG light on the panel lights up.
+   Open Final Cut Pro or Logic Pro; the profile switches by itself. Logic installs the Mackie
+   Control surface automatically the first time the app is running alongside it.
+
+Use the menu-bar item to turn on **Launch at Login** if you want it always available.
+
 ## Building
 
 Requires Xcode 27 or later (Swift 6.4) on macOS 14 or later.
@@ -32,6 +48,10 @@ open "build/Speed Editor Bridge.app"
 The app needs Accessibility permission to send keystrokes. Ad-hoc signatures change on every
 build and make macOS forget that grant, so run `tools/make-signing-cert.sh` once to create a local
 signing certificate; `make-app.sh` uses it automatically.
+
+`./make-release.sh` builds and zips the app into `dist/`. Pushing a tag such as `v0.2.0` runs the
+GitHub Actions workflow, which builds the same zip on GitHub's macOS runners and attaches it to a
+release, so releases do not depend on any one machine.
 
 `swift run seprobe` is a command-line probe that unlocks the device and prints every key and
 wheel event, useful for checking a unit.

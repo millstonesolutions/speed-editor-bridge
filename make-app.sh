@@ -4,6 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 CONFIG="${1:-release}"
 APP="build/Speed Editor Bridge.app"
+VERSION="$(cat VERSION)"
+BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 swift build -c "$CONFIG" --product SpeedEditorBridge
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -20,8 +22,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleName</key><string>Speed Editor Bridge</string>
     <key>CFBundleDisplayName</key><string>Speed Editor Bridge</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1.0</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleShortVersionString</key><string>$VERSION</string>
+    <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSHumanReadableCopyright</key><string>First Baptist Church Lake Dallas</string>

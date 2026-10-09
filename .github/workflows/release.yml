@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Package
+        run: ./make-release.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Speed-Editor-Bridge
+          path: dist/*.zip
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/*.zip \
+            --title "Speed Editor Bridge ${GITHUB_REF_NAME#v}" \
+            --notes "Download the zip, unzip it, and move Speed Editor Bridge to Applications. See the README for first-launch steps."
