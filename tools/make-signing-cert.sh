@@ -14,7 +14,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
   -addext "keyUsage=critical,digitalSignature" \
   -addext "extendedKeyUsage=critical,codeSigning" \
   -addext "basicConstraints=critical,CA:false"
-openssl pkcs12 -export -out "$TMP/id.p12" -inkey "$TMP/key.pem" -in "$TMP/cert.pem" -passout pass:seb -name "$NAME"
+openssl pkcs12 -export -macalg sha1 -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -out "$TMP/id.p12" -inkey "$TMP/key.pem" -in "$TMP/cert.pem" -passout pass:seb -name "$NAME"
 security import "$TMP/id.p12" -k ~/Library/Keychains/login.keychain-db -P seb -T /usr/bin/codesign -T /usr/bin/security
 # Trust it for code signing (user domain). macOS prompts for your login password here.
 security add-trusted-cert -p codeSign -k ~/Library/Keychains/login.keychain-db "$TMP/cert.pem"
