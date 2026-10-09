@@ -26,7 +26,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSHumanReadableCopyright</key><string>First Baptist Church Lake Dallas</string>
+    <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Millstone Solutions LLC. Church and Ministry Use License.</string>
 </dict>
 </plist>
 PLIST

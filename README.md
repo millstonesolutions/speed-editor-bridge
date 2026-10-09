@@ -62,7 +62,15 @@ wheel event, useful for checking a unit.
 - `Sources/SpeedEditorBridge` — the app: engine, keystroke sender, Mackie Control surface, profiles, SwiftUI.
 - `Sources/seprobe` — the probe tool.
 
-## Notes
+## License
+
+Speed Editor Bridge is source-available under the Millstone Solutions Church and Ministry Use
+License (see [LICENSE](LICENSE)). Christian churches and ministries may download, build and use it
+for free. Anyone may read the source, test it and contribute. Other uses need written permission:
+open an issue to ask.
 
 The Speed Editor protocol was reimplemented from publicly documented descriptions of the device;
-no third-party code is included. Built for First Baptist Church Lake Dallas.
+no third-party code is included. DaVinci Resolve and Speed Editor are trademarks of Blackmagic
+Design; Final Cut Pro and Logic Pro are trademarks of Apple; Mackie Control is a trademark of
+LOUD Technologies. This project is not affiliated with any of them. Built for First Baptist
+Church Lake Dallas.
